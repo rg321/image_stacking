@@ -2,6 +2,7 @@ import os
 import cv2
 import numpy as np
 from time import time
+from google.colab.patches import cv2_imshow
 
 
 
@@ -22,11 +23,16 @@ def stackImagesECC(file_list):
             stacked_image = image
         else:
             # Estimate perspective transform
-            s, M = cv2.findTransformECC(cv2.cvtColor(image,cv2.COLOR_BGR2GRAY), first_image, M, cv2.MOTION_HOMOGRAPHY)
+            # import pdb; pdb.set_trace()
+            criteria = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 3000,  1e-5)
+            s, M = cv2.findTransformECC(cv2.cvtColor(image,cv2.COLOR_BGR2GRAY), first_image, M, cv2.MOTION_HOMOGRAPHY, criteria, inputMask=None, gaussFiltSize=1)
             w, h, _ = image.shape
             # Align image to first image
             image = cv2.warpPerspective(image, M, (h, w))
+            # cv2_imshow(image)
+            image=np.resize(image, stacked_image.shape)
             stacked_image += image
+            # cv2_imshow(stacked_image)
 
     stacked_image /= len(file_list)
     stacked_image = (stacked_image*255).astype(np.uint8)
@@ -75,6 +81,7 @@ def stackImagesKeypointMatching(file_list):
                 [kp[m.trainIdx].pt for m in matches]).reshape(-1, 1, 2)
 
             # Estimate perspective transformation
+            import pdb; pdb.set_trace()
             M, mask = cv2.findHomography(dst_pts, src_pts, cv2.RANSAC, 5.0)
             w, h, _ = imageF.shape
             imageF = cv2.warpPerspective(imageF, M, (h, w))
